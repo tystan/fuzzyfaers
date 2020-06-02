@@ -13,8 +13,8 @@ Signal detection of adverse drug events often requires analysis of tabulated cou
 
 |         | `Event A`| `Event B` |
 |:--------|---------:|----------:|
-|**`Drug A`** |       $a$|        $b$|
-|**`Drug B`**|       $c$|        $d$|
+|**`Drug A`**|       *a*|        *b*|
+|**`Drug B`**|       *c*|        *d*|
 
 
 To get to this data, or a flat dataset with a single record for each adverse event is a time consuming process. Not only that but finding synonyms to drug names is a painfully manual process, compounded by alternative spellings and superfluous text included in the drug text fields.
