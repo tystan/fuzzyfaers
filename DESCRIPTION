@@ -1,0 +1,22 @@
+Package: fuzzyfaers
+Type: Package
+Title: Functions to extract drug records from the FAERS (FDA Adverse Event Reporting System) database
+Version: 0.1.0
+Author: Ty Stanford
+Maintainer: Ty Stanford <tystan@gmail.com>
+Description: This package provides an automated way to extract records of a drug and its synonyms, and their inevitable misspellings and requiring fuzzy string matching.
+License: GPL-2
+Encoding: UTF-8
+LazyData: true
+Imports: RPostgreSQL,
+    yaml,
+    dplyr,
+    knitr,
+    rlang,
+    stringr,
+    tidyr,
+    readr,
+    ggplot2,
+    ggrepel,
+    stringdist,
+    foreach
