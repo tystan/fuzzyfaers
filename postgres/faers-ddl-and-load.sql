@@ -178,7 +178,7 @@ select * from faers_dat.reac limit 100;
 COPY faers_dat.indi FROM 'C:/directory/location/indi.csv' WITH DELIMITER ',' CSV HEADER QUOTE '"' ;
 select * from faers_dat.indi limit 100;
 
-COPY faers_dat.ther FROM 'C:/Users/tysta/Documents/ohdsi/faers/ther.csv' WITH DELIMITER ',' CSV HEADER QUOTE '"' ;
+COPY faers_dat.ther FROM 'C:/directory/location/ther.csv' WITH DELIMITER ',' CSV HEADER QUOTE '"' ;
 select * from faers_dat.ther limit 100;
 
 COPY faers_dat.demo FROM 'C:/directory/location/demo.csv' WITH DELIMITER ',' CSV HEADER QUOTE '"' ;
