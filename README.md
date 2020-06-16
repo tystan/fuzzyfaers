@@ -48,7 +48,7 @@ library(fuzzyfaers)
 ## Process `fuzzyfaers` undertakes to get the relevant FAERS data
 
 
-![](https://github.com/tystan/fuzzyfaers/blob/master/fig/fuzzfaers-scheme.png)
+![](https://github.com/tystan/fuzzyfaers/blob/master/fig/fuzzyfaers-scheme.png)
 
 
 
