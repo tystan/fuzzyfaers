@@ -45,7 +45,7 @@ library(fuzzyfaers)
 ```
 
 
-## Process `fuzzyfaers` undertakes to get the relevant FAERS data
+## `fuzzyfaers` process to extact drug specific FAERS data
 
 
 ![](https://github.com/tystan/fuzzyfaers/blob/master/fig/fuzzyfaers-scheme.png)
