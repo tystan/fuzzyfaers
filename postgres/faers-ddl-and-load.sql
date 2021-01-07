@@ -17,11 +17,6 @@ SHOW search_path;
 SET search_path TO faers_dat;
 SHOW search_path;
 
-  
-DROP TABLE IF EXISTS demo;
-DROP TABLE IF EXISTS drug;
-DROP TABLE IF EXISTS indi;
-DROP TABLE IF EXISTS outc, reac, rpsr, ther;
 
 
 
@@ -33,103 +28,119 @@ DROP TABLE IF EXISTS outc, reac, rpsr, ther;
 -- note I may have made some columns bigger than they strictly need to be
 
 
+DROP TABLE IF EXISTS faers_dat.indi;
 CREATE TABLE faers_dat.indi (
-primaryid     BIGINT     NOT NULL,
-caseid     BIGINT     NOT NULL,
-indi_drug_seq    BIGINT     NOT NULL, -- VARCHAR(3) 
-indi_pt     VARCHAR(100)     NOT NULL, -- VARCHAR(93)
-qtr     VARCHAR(6)     NOT NULL
+  primaryid     BIGINT     NOT NULL,
+  caseid     BIGINT     NOT NULL,
+  indi_drug_seq    BIGINT     NOT NULL, -- VARCHAR(3) 
+  indi_pt     VARCHAR(100)     NOT NULL, -- VARCHAR(93)
+  qtr     VARCHAR(6)     NOT NULL
 );
 
+
+
+DROP TABLE IF EXISTS faers_dat.outc;
 CREATE TABLE faers_dat.outc (
-primaryid     BIGINT     NOT NULL,
-caseid     BIGINT     NOT NULL,
-outc_cod     VARCHAR(4)     NOT NULL, -- VARCHAR(2)
-qtr     VARCHAR(6)     NOT NULL
+  primaryid     BIGINT     NOT NULL,
+  caseid     BIGINT     NOT NULL,
+  outc_cod     VARCHAR(4)     NOT NULL, -- VARCHAR(2)
+  qtr     VARCHAR(6)     NOT NULL
 );
 
+
+
+DROP TABLE IF EXISTS faers_dat.reac;
 CREATE TABLE faers_dat.reac (
-primaryid     BIGINT     NOT NULL,
-caseid     BIGINT     NOT NULL,
-pt     VARCHAR(100)     NOT NULL, -- VARCHAR(93)
-qtr     VARCHAR(6)     NOT NULL,
-drug_rec_act     VARCHAR(90)     NULL -- VARCHAR(66)
+  primaryid     BIGINT     NOT NULL,
+  caseid     BIGINT     NOT NULL,
+  pt     VARCHAR(100)     NOT NULL, -- VARCHAR(93)
+  qtr     VARCHAR(6)     NOT NULL,
+  drug_rec_act     VARCHAR(90)     NULL -- VARCHAR(66)
 );
 
+
+
+DROP TABLE IF EXISTS faers_dat.rpsr;
 CREATE TABLE faers_dat.rpsr (
-primaryid     BIGINT     NOT NULL,
-caseid     BIGINT     NOT NULL,
-rpsr_cod     VARCHAR(6)     NOT NULL, -- VARCHAR(3)
-qtr     VARCHAR(6)     NOT NULL
+  primaryid     BIGINT     NOT NULL,
+  caseid     BIGINT     NOT NULL,
+  rpsr_cod     VARCHAR(6)     NOT NULL, -- VARCHAR(3)
+  qtr     VARCHAR(6)     NOT NULL
 );
 
 
+DROP TABLE IF EXISTS faers_dat.ther;
 CREATE TABLE faers_dat.ther (
-primaryid     BIGINT     NOT NULL,
-caseid     BIGINT     NOT NULL,
-dsg_drug_seq     BIGINT     NOT NULL, -- VARCHAR(3)
-start_dt     VARCHAR(8)     NULL,
-end_dt     VARCHAR(8)     NULL,
-dur     VARCHAR(7)     NULL,
-dur_cod     VARCHAR(10)     NULL, -- VARCHAR(5)
-qtr     VARCHAR(6)     NOT NULL
+  primaryid     BIGINT     NOT NULL,
+  caseid     BIGINT     NOT NULL,
+  dsg_drug_seq     BIGINT     NOT NULL, -- VARCHAR(3)
+  start_dt     VARCHAR(8)     NULL,
+  end_dt     VARCHAR(8)     NULL,
+  dur     VARCHAR(7)     NULL,
+  dur_cod     VARCHAR(10)     NULL, -- VARCHAR(5)
+  qtr     VARCHAR(6)     NOT NULL
 );
 
+
+
+DROP TABLE IF EXISTS faers_dat.demo;
 CREATE TABLE faers_dat.demo (
-primaryid     BIGINT     NOT NULL,
-caseid     BIGINT     NOT NULL,
-caseversion     BIGINT     NOT NULL, -- VARCHAR(3)
-i_f_code     VARCHAR(1)     NOT NULL,
-event_dt     VARCHAR(8)     NULL,
-mfr_dt     VARCHAR(8)     NULL,
-init_fda_dt     VARCHAR(8)     NOT NULL,
-fda_dt     VARCHAR(8)     NOT NULL,
-rept_cod     VARCHAR(3)     NOT NULL,
-mfr_num     VARCHAR(73)     NULL,
-mfr_sndr     VARCHAR(65)     NULL,
-age     NUMERIC(12, 2)     NULL, -- VARCHAR(7)
-age_cod     VARCHAR(3)     NULL,
-gndr_cod     VARCHAR(3)     NULL,
-e_sub     VARCHAR(1)     NOT NULL,
-wt     VARCHAR(14)    NULL, -- VARCHAR(7) -> NUMERIC(14, 5) 
-wt_cod     VARCHAR(5)     NULL,
-rept_dt     VARCHAR(8)     NULL,
-to_mfr     VARCHAR(1)     NULL,
-occp_cod     VARCHAR(5)     NULL,
-reporter_country     VARCHAR(21)     NULL,
-occr_country     VARCHAR(2)     NULL,
-qtr     VARCHAR(6)     NOT NULL,
-auth_num     VARCHAR(100)     NULL,
-lit_ref     VARCHAR(500)     NULL,
-age_grp     VARCHAR(1)     NULL,
-sex     VARCHAR(3)     NULL
+  primaryid     BIGINT     NOT NULL,
+  caseid     BIGINT     NOT NULL,
+  caseversion     BIGINT     NOT NULL, -- VARCHAR(3)
+  i_f_code     VARCHAR(1)     NOT NULL,
+  event_dt     VARCHAR(8)     NULL,
+  mfr_dt     VARCHAR(8)     NULL,
+  init_fda_dt     VARCHAR(8)     NOT NULL,
+  fda_dt     VARCHAR(8)     NOT NULL,
+  rept_cod     VARCHAR(5)      NULL,
+  mfr_num     VARCHAR(90)     NULL,
+  mfr_sndr     VARCHAR(65)     NULL,
+  age     NUMERIC(12, 2)     NULL, -- VARCHAR(7)
+  age_cod     VARCHAR(3)     NULL,
+  gndr_cod     VARCHAR(3)     NULL,
+  e_sub     VARCHAR(1)     NOT NULL,
+  wt     VARCHAR(14)    NULL, -- VARCHAR(7) -> NUMERIC(14, 5) 
+  wt_cod     VARCHAR(5)     NULL,
+  rept_dt     VARCHAR(8)     NULL,
+  to_mfr     VARCHAR(1)     NULL,
+  occp_cod     VARCHAR(5)     NULL,
+  reporter_country     VARCHAR(21)     NULL,
+  occr_country     VARCHAR(2)     NULL,
+  qtr     VARCHAR(6)     NOT NULL,
+  auth_num     VARCHAR(100)     NULL,
+  lit_ref     VARCHAR(500)     NULL,
+  age_grp     VARCHAR(1)     NULL,
+  sex     VARCHAR(3)     NULL
 );
 
+
+DROP TABLE IF EXISTS faers_dat.drug;
 CREATE TABLE faers_dat.drug (
-primaryid     BIGINT     NOT NULL,
-caseid     BIGINT     NOT NULL,
-drug_seq     BIGINT     NOT NULL, -- VARCHAR(3)
-role_cod     VARCHAR(2)     NULL,
-drugname     VARCHAR(500)     NULL,
-val_vbm     BIGINT     NOT NULL, -- VARCHAR(1)
-route     VARCHAR(37)     NULL,
-dose_vbm     VARCHAR(288)     NULL,
-cum_dose_chr     VARCHAR(10)     NULL,
-cum_dose_unit     VARCHAR(8)     NULL,
-dechal     VARCHAR(1)     NULL,
-rechal     VARCHAR(2)     NULL,
-lot_num     VARCHAR(363)     NULL,
-exp_dt     VARCHAR(139)     NULL,
-nda_num     VARCHAR(27)     NULL,
-dose_amt     VARCHAR(15)     NULL,
-dose_unit     VARCHAR(10)     NULL,
-dose_form     VARCHAR(50)     NULL,
-dose_freq     VARCHAR(11)     NULL,
-qtr     VARCHAR(6)     NOT NULL,
-prod_ai     VARCHAR(300)     NULL
+  primaryid     BIGINT     NOT NULL,
+  caseid     BIGINT     NOT NULL,
+  drug_seq     BIGINT     NOT NULL, -- VARCHAR(3)
+  role_cod     VARCHAR(2)     NULL,
+  drugname     VARCHAR(500)     NULL,
+  val_vbm     BIGINT     NOT NULL, -- VARCHAR(1)
+  route     VARCHAR(37)     NULL,
+  dose_vbm     VARCHAR(288)     NULL,
+  cum_dose_chr     VARCHAR(15)     NULL,
+  cum_dose_unit     VARCHAR(8)     NULL,
+  dechal     VARCHAR(1)     NULL,
+  rechal     VARCHAR(2)     NULL,
+  lot_num     VARCHAR(363)     NULL,
+  exp_dt     VARCHAR(139)     NULL,
+  nda_num     VARCHAR(27)     NULL,
+  dose_amt     VARCHAR(15)     NULL,
+  dose_unit     VARCHAR(10)     NULL,
+  dose_form     VARCHAR(50)     NULL,
+  dose_freq     VARCHAR(11)     NULL,
+  qtr     VARCHAR(6)     NOT NULL,
+  prod_ai     VARCHAR(300)     NULL
 );
 
-    
+
 
 
 
@@ -138,56 +149,89 @@ prod_ai     VARCHAR(300)     NULL
 /* +++++++++++++++++++++++++++++++++++++++++ */
 
 
-/* Linux (or Mac OS) */
-
-COPY faers_dat.outc FROM '/directory/location/outc.csv' WITH DELIMITER ',' CSV HEADER QUOTE '"' ;
-select * from faers_dat.outc limit 100; -- just a visual check to see everything looks OK
-
-COPY faers_dat.rpsr FROM '/directory/location/rpsr.csv' WITH DELIMITER ',' CSV HEADER QUOTE '"' ;
-select * from faers_dat.rpsr limit 100;
-
-COPY faers_dat.reac FROM '/directory/location/reac.csv' WITH DELIMITER ',' CSV HEADER QUOTE '"' ;
-select * from faers_dat.reac limit 100;
-
-COPY faers_dat.indi FROM '/directory/location/indi.csv' WITH DELIMITER ',' CSV HEADER QUOTE '"' ;
-select * from faers_dat.indi limit 100;
-
-COPY faers_dat.ther FROM '/directory/location/ther.csv' WITH DELIMITER ',' CSV HEADER QUOTE '"' ;
-select * from faers_dat.ther limit 100;
-
-COPY faers_dat.demo FROM '/directory/location/demo.csv' WITH DELIMITER ',' CSV HEADER QUOTE '"' ;
-select * from faers_dat.demo limit 100;
-
-COPY faers_dat.drug FROM '/directory/location/drug.csv' WITH DELIMITER ',' CSV HEADER QUOTE '"' ;
-select * from faers_dat.drug limit 100;
+/* Windows file locations but change for Linux or macOS */
 
 
-
-/* OR Windows  */
-
-
-COPY faers_dat.outc FROM 'C:/directory/location/outc.csv' WITH DELIMITER ',' CSV HEADER QUOTE '"' ;
+COPY faers_dat.outc FROM 'C:/Users/Public/faers/csv/outc.csv' WITH DELIMITER ',' CSV HEADER QUOTE '"' ;
 select * from faers_dat.outc limit 100;
 
-COPY faers_dat.rpsr FROM 'C:/directory/location/rpsr.csv' WITH DELIMITER ',' CSV HEADER QUOTE '"' ;
+COPY faers_dat.rpsr FROM 'C:/Users/Public/faers/csv/rpsr.csv' WITH DELIMITER ',' CSV HEADER QUOTE '"' ;
 select * from faers_dat.rpsr limit 100;
 
-COPY faers_dat.reac FROM 'C:/directory/location/reac.csv' WITH DELIMITER ',' CSV HEADER QUOTE '"' ;
+COPY faers_dat.reac FROM 'C:/Users/Public/faers/csv/reac.csv' WITH DELIMITER ',' CSV HEADER QUOTE '"' ;
 select * from faers_dat.reac limit 100;
 
-COPY faers_dat.indi FROM 'C:/directory/location/indi.csv' WITH DELIMITER ',' CSV HEADER QUOTE '"' ;
+COPY faers_dat.indi FROM 'C:/Users/Public/faers/csv/indi.csv' WITH DELIMITER ',' CSV HEADER QUOTE '"' ;
 select * from faers_dat.indi limit 100;
 
-COPY faers_dat.ther FROM 'C:/directory/location/ther.csv' WITH DELIMITER ',' CSV HEADER QUOTE '"' ;
+COPY faers_dat.ther FROM 'C:/Users/Public/faers/csv/ther.csv' WITH DELIMITER ',' CSV HEADER QUOTE '"' ;
 select * from faers_dat.ther limit 100;
 
-COPY faers_dat.demo FROM 'C:/directory/location/demo.csv' WITH DELIMITER ',' CSV HEADER QUOTE '"' ;
+COPY faers_dat.demo FROM 'C:/Users/Public/faers/csv/demo.csv' WITH DELIMITER ',' CSV HEADER QUOTE '"' ;
 select * from faers_dat.demo limit 100;
 
-COPY faers_dat.drug FROM 'C:/directory/location/drug.csv' WITH DELIMITER ',' CSV HEADER QUOTE '"' ;
+/* +++++++++++++++++++++++++++++++++++++++++ */
+/* 
+NOTE: you may get an error with the below COPY statement on Windows
+please see the below comments for work-around 
+*/
+/* +++++++++++++++++++++++++++++++++++++++++ */
+
+COPY faers_dat.drug FROM 'C:/Users/Public/faers/csv/drug.csv' WITH DELIMITER ',' CSV HEADER QUOTE '"' ;
 select * from faers_dat.drug limit 100;
 
 
+
+/* +++++++++++++++++++++++++++++++++++++++++ */
+/* 
+
++++ work-around for large csv imports +++
+
+NOTE: the above load into DRUG table may not work on windows because of 
+a bug with file sizes > 1GB 
+
+the below is a work around using WSL shell/bash on Linux
+
+NB: the split csvs do NOT have header rows 
+
+*/
+/* +++++++++++++++++++++++++++++++++++++++++ */
+
+-- first of all you need to split the drug.csv file into smaller chunks
+-- you can use the `split` utility within WSL shell/bash on Linux 
+-- below is the code to do so
+
+/*
+
+cd /mnt/c/Users/Public/faers/csv
+# let's create a sub directory to keep smaller chunks
+mkdir drug_split
+
+# this creates drug textfile chunks of ~900mb each named drug01, drug02, ... etc
+split -C 900m --numeric-suffixes drug.csv drug_split/drug
+
+# now append ".csv" to each split file in drug_split/
+cd drug_split
+for j in *; do mv -- "$j" "${j}.csv"; done
+
+# you are ready to go!
+
+*/
+
+
+/* NB: the split csvs do NOT have header rows except for the first one */
+COPY faers_dat.drug FROM 'C:/Users/Public/faers/csv/drug_split/drug00.csv' WITH DELIMITER ',' CSV HEADER QUOTE '"' ;
+select * from faers_dat.drug limit 100;
+select count(*) from faers_dat.drug;-- should be ~10 mil
+
+COPY faers_dat.drug FROM 'C:/Users/Public/faers/csv/drug_split/drug01.csv' WITH DELIMITER ',' CSV QUOTE '"' ;
+select count(*) from faers_dat.drug; -- should be ~10 mil + ~10 mil = ~20 mil
+
+
+COPY faers_dat.drug FROM 'C:/Users/Public/faers/csv/drug_split/drug02.csv' WITH DELIMITER ',' CSV QUOTE '"' ;
+COPY faers_dat.drug FROM 'C:/Users/Public/faers/csv/drug_split/drug03.csv' WITH DELIMITER ',' CSV QUOTE '"' ;
+COPY faers_dat.drug FROM 'C:/Users/Public/faers/csv/drug_split/drug04.csv' WITH DELIMITER ',' CSV QUOTE '"' ;
+select count(*) from faers_dat.drug; -- ~40 mil
 
 
 /* +++++++++++++++++++++++++++++++++++++++++ */
