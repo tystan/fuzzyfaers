@@ -512,6 +512,9 @@ auto_get_dat <- function(cdm_con, cdm_schema, fda_con, fda_schema, drug, form = 
 
 get_drug_outc_2x2 <- function(con, drug, outc, drug_role = c("PS", "SS")) {
   
+  
+  outc_concat <- paste0("[", paste(outc, collapse = "|"), "]")
+  
   q5_list <- list()
   q5_list$crea_state <- "CREATE TEMP TABLE temp_5  AS"
   q5_list$sele_state <- paste0("select distinct primaryid, '", drug, "' as drug_search")
@@ -571,7 +574,8 @@ get_drug_outc_2x2 <- function(con, drug, outc, drug_role = c("PS", "SS")) {
   q9_list$join_state <- "left join temp_8 as t8 on t7.primaryid = t8.primaryid"
   execute_pg(con, "DROP table IF EXISTS temp_9;  ")
   execute_pg(con,  paste(q9_list, collapse = "       "))
-  execute_pg(con,  paste0("UPDATE temp_9 SET pt = '_not ", outc, "' WHERE pt is null;"))
+  execute_pg(con,  paste0("UPDATE temp_9 SET pt = '", outc_concat, "' WHERE pt is not null;"))
+  execute_pg(con,  paste0("UPDATE temp_9 SET pt = '_not ", outc_concat, "' WHERE pt is null;"))
   
   res_tab <- query_pg(con,  "select drug_search, pt, count(distinct primaryid) as count from temp_9 group by drug_search, pt;")
   res_tab <- xtabs(count ~ drug_search + pt, data = res_tab)
