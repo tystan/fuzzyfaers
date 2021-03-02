@@ -1,4 +1,4 @@
-exportPattern("^[[:alpha:]_]+")
+exportPattern("^[[:alpha:]]+")
 import("RPostgreSQL")
 import("yaml")
 import("dplyr")
