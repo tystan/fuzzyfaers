@@ -41,6 +41,8 @@ concat_analysis_dat <- function(...) {
 create_row_per_caseid <- function(dat, outc_of_interest, role_filter = c("PS", "SS", "C", "I"), outc_exclusions = NULL) {
   
   outc_of_interest <- tolower(outc_of_interest)  
+  outc_concat <- paste0("[", paste(outc_of_interest, collapse = "|"), "]")
+  
   if (!is_na_or_null(outc_exclusions)) {
     outc_exclusions <- tolower(outc_exclusions)
   }
@@ -95,16 +97,26 @@ create_row_per_caseid <- function(dat, outc_of_interest, role_filter = c("PS", "
     
   }
   
-  dat$outc <- grepl(outc_of_interest, dat$pt)
+  dat$outc <- dat$pt %in% outc_of_interest
   
+  grepl_trgt <- paste0("(", paste(outc_of_interest, collapse = "|"), ")")
+  outc_grepl <- grepl(grepl_trgt, dat[["pt"]])
   
+  if (any(outc_grepl != dat[["outc"]])) {
+    cat(
+      "The following PTs contain the outc_of_interest strings but are not exact matches.\n",
+      "Should they be included in the outc_of_interest vector?\n"
+    )
+    print(table(dat$pt[!dat[["outc"]] & outc_grepl]))
+  }
   
   dat_with_outc <-
     dat %>%
     dplyr::filter(outc) %>%
     arrange(drug_search, primaryid, drug_seq) %>%
     group_by(drug_search, primaryid) %>%
-    dplyr::filter(1 == row_number()) 
+    dplyr::filter(1 == row_number())  %>%
+    mutate(pt = outc_concat)
   
   dat_wout_outc <-
     dat %>%
@@ -112,7 +124,7 @@ create_row_per_caseid <- function(dat, outc_of_interest, role_filter = c("PS", "
     arrange(drug_search, primaryid, drug_seq) %>%
     group_by(drug_search, primaryid) %>%
     dplyr::filter(1 == row_number()) %>%
-    mutate(pt = paste0("_not ", outc_of_interest))
+    mutate(pt = paste0("not ", outc_concat))
   
   dat <- bind_rows(dat_with_outc, dat_wout_outc)
   
@@ -120,7 +132,7 @@ create_row_per_caseid <- function(dat, outc_of_interest, role_filter = c("PS", "
   dat <- 
     dat %>%
     # order by pt = outcome of interest first
-    arrange(drug_search, primaryid, desc(pt)) %>%
+    arrange(drug_search, primaryid, pt) %>%
     group_by(drug_search, primaryid) %>%
     dplyr::filter(1 == row_number()) %>%
     ungroup()
@@ -191,6 +203,8 @@ create_row_per_caseid <- function(dat, outc_of_interest, role_filter = c("PS", "
 create_row_per_caseid_kp_excl <- function(dat, outc_of_interest, role_filter = c("PS", "SS", "C", "I"), outc_exclusions = NULL) {
   
   outc_of_interest <- tolower(outc_of_interest)
+  outc_concat <- paste0("[", paste(outc_of_interest, collapse = "|"), "]")
+  
   if (!is_na_or_null(outc_exclusions)) {
     outc_exclusions <- tolower(outc_exclusions)
   }
@@ -207,7 +221,23 @@ create_row_per_caseid_kp_excl <- function(dat, outc_of_interest, role_filter = c
     dplyr::filter(!is.na(drug_catch))
   
   
-  dat$outc <- grepl(outc_of_interest, dat$pt)
+  # dat$outc <- grepl(outc_of_interest, dat$pt)
+  
+  dat$outc <- dat$pt %in% outc_of_interest
+
+  grepl_trgt <- paste0("(", paste(outc_of_interest, collapse = "|"), ")")
+  outc_grepl <- grepl(grepl_trgt, dat[["pt"]])
+
+  if (any(outc_grepl != dat[["outc"]])) {
+    cat(
+      "The following PTs contain the outc_of_interest strings but are not exact matches.\n",
+      "Should they be included in the outc_of_interest vector?\n"
+    )
+    print(table(dat$pt[!dat[["outc"]] & outc_grepl]))
+  }
+
+  
+  
   
   dat_with_outc <-
     dat %>%
@@ -216,7 +246,7 @@ create_row_per_caseid_kp_excl <- function(dat, outc_of_interest, role_filter = c
     group_by(drug_search, primaryid) %>%
     dplyr::filter(1 == row_number()) %>%
     ungroup() %>%
-    mutate(pt = paste("(3)", pt))
+    mutate(pt = paste("(1)", outc_concat))
   
   if (!is_na_or_null(outc_exclusions)) {
     
@@ -253,7 +283,7 @@ create_row_per_caseid_kp_excl <- function(dat, outc_of_interest, role_filter = c
     group_by(drug_search, primaryid) %>%
     dplyr::filter(1 == row_number()) %>%
     ungroup() %>%
-    mutate(pt = paste0("(1) not ", outc_of_interest))
+    mutate(pt = paste0("(3) not ", outc_concat))
   
   # don't want those in either (1) and (2)
   dat_wout_outc <-

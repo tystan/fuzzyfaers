@@ -513,6 +513,7 @@ auto_get_dat <- function(cdm_con, cdm_schema, fda_con, fda_schema, drug, form = 
 get_drug_outc_2x2 <- function(con, drug, outc, drug_role = c("PS", "SS")) {
   
   
+  drug_concat <- paste0("[", paste(drug, collapse = "|"), "]")
   outc_concat <- paste0("[", paste(outc, collapse = "|"), "]")
   
   q5_list <- list()
@@ -548,7 +549,8 @@ get_drug_outc_2x2 <- function(con, drug, outc, drug_role = c("PS", "SS")) {
   q7_list$join_state <- "left join temp_5 as t5 on t6.primaryid = t5.primaryid"
   execute_pg(con, "DROP table IF EXISTS temp_7;  ")
   execute_pg(con, paste(q7_list, collapse = "       "))
-  execute_pg(con, paste0("UPDATE temp_7 SET drug_search = '_not ", drug, "' WHERE drug_search is null;"))
+  execute_pg(con, paste0("UPDATE temp_7 SET drug_search = '", drug_concat, "' WHERE drug_search is not null;"))
+  execute_pg(con, paste0("UPDATE temp_7 SET drug_search = 'not ", drug_concat, "' WHERE drug_search is null;"))
   # query_pg(con, "select drug_search, count(*) from temp_7 group by drug_search;")
   
   
@@ -575,7 +577,7 @@ get_drug_outc_2x2 <- function(con, drug, outc, drug_role = c("PS", "SS")) {
   execute_pg(con, "DROP table IF EXISTS temp_9;  ")
   execute_pg(con,  paste(q9_list, collapse = "       "))
   execute_pg(con,  paste0("UPDATE temp_9 SET pt = '", outc_concat, "' WHERE pt is not null;"))
-  execute_pg(con,  paste0("UPDATE temp_9 SET pt = '_not ", outc_concat, "' WHERE pt is null;"))
+  execute_pg(con,  paste0("UPDATE temp_9 SET pt = 'not ", outc_concat, "' WHERE pt is null;"))
   
   res_tab <- query_pg(con,  "select drug_search, pt, count(distinct primaryid) as count from temp_9 group by drug_search, pt;")
   res_tab <- xtabs(count ~ drug_search + pt, data = res_tab)
