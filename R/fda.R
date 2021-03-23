@@ -510,7 +510,7 @@ auto_get_dat <- function(cdm_con, cdm_schema, fda_con, fda_schema, drug, form = 
 
 
 
-get_drug_outc_2x2 <- function(con, drug, outc, drug_role = c("PS", "SS")) {
+get_drug_outc_2x2 <- function(con, drug, outc, drug_role = c("PS", "SS"), by_year = FALSE) {
   
   
   drug_concat <- paste0("[", paste(drug, collapse = "|"), "]")
@@ -569,7 +569,6 @@ get_drug_outc_2x2 <- function(con, drug, outc, drug_role = c("PS", "SS")) {
   
   
   q9_list <- list()
-  q9_list
   q9_list$crea_state <- "CREATE TEMP TABLE temp_9  AS"
   q9_list$sele_state <- "select distinct t7.*, t8.pt "
   q9_list$from_state <- "from temp_7 as t7"
@@ -579,8 +578,43 @@ get_drug_outc_2x2 <- function(con, drug, outc, drug_role = c("PS", "SS")) {
   execute_pg(con,  paste0("UPDATE temp_9 SET pt = '", outc_concat, "' WHERE pt is not null;"))
   execute_pg(con,  paste0("UPDATE temp_9 SET pt = 'not ", outc_concat, "' WHERE pt is null;"))
   
-  res_tab <- query_pg(con,  "select drug_search, pt, count(distinct primaryid) as count from temp_9 group by drug_search, pt;")
-  res_tab <- xtabs(count ~ drug_search + pt, data = res_tab)
+  
+  res_tab <- NULL # initialise
+  if (by_year) {
+    
+    q10_list <- list()
+    q10_list$crea_state <- "CREATE TEMP TABLE temp_10  AS"
+    q10_list$sele_state <- "select t9.*, de.event_dt"
+    q10_list$from_state <- "from temp_9 as t9"
+    q10_list$join_state <- "left join faers_dat.demo as de on t9.primaryid = de.primaryid"
+    execute_pg(con, "DROP table IF EXISTS temp_10;  ")
+    execute_pg(con,  paste(q10_list, collapse = "       "))
+    execute_pg(con,  paste0("UPDATE temp_10 SET event_dt = substring(event_dt, 1, 4) WHERE event_dt is not null;"))
+    execute_pg(con,  paste0("UPDATE temp_10 SET event_dt = '9999' WHERE event_dt is null;"))
+    execute_pg(con,  paste0("UPDATE temp_10 SET event_dt = '9999' WHERE event_dt < '2013' or event_dt > '", format(Sys.time(), '%Y'), "';"))
+    
+    
+    res_tab <- 
+      query_pg(
+        con,  
+        "select drug_search, pt, event_dt, count(distinct primaryid) as count from temp_10 group by drug_search, pt, event_dt;"
+      )
+    res_tab <- xtabs(count ~ drug_search + pt + event_dt, data = res_tab)
+    
+    
+  } else {
+  
+  
+    res_tab <- 
+      query_pg(
+        con,  
+        "select drug_search, pt, count(distinct primaryid) as count from temp_9 group by drug_search, pt;"
+      )
+    res_tab <- xtabs(count ~ drug_search + pt, data = res_tab)
+    
+  }
+  
+  
   return(res_tab)
   
 }
