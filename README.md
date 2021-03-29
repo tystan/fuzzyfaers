@@ -21,8 +21,8 @@ To get to this data, or a flat dataset with a single record for each adverse eve
 
 This package aims to
 
-1. provide data is as ready to go format as possible with instructions to house it in a manageable database environment accessable by `R`, and
-2. automate the drug synonym (and mispelling) searching in the database to extract single record adverse event `data.frame`s in `R`.
+1. provide data in as ready-to-go format as possible with instructions to house it in a manageable database environment accessible by `R`, and
+2. automate the drug synonym (and misspelling) searching in the database to extract single record adverse event `data.frame`s in `R`.
 
 ## Prerequisites
 
