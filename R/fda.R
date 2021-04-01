@@ -798,12 +798,14 @@ get_indication_records <- function(indis, role_code = "PS", role_code_exclusive 
   temptab_q <- list() 
   
   temptab_q$sele_state <- paste0(
-    "select i.indi_pt, dr.primaryid, dr.caseid, dr.drug_seq, dr.drugname, dr.role_cod, dr.prod_ai, ", 
+    "select lower(i.indi_pt) as indi_pt, dr.primaryid, dr.caseid, dr.drug_seq, dr.drugname, dr.role_cod, dr.prod_ai, ",
+    "lower(r.pt) as pt, ", 
     "de.event_dt, de.fda_dt, de.rept_cod, de.age, de.age_cod, de.sex, de.occr_country"
   )
   temptab_q$from_state <- "from indi as i"
   temptab_q$joi1_state <- "join drug as dr on dr.primaryid = i.primaryid and dr.drug_seq = i.indi_drug_seq and dr.qtr = i.qtr"
   temptab_q$joi2_state <- "join demo as de on de.primaryid = dr.primaryid and de.qtr = dr.qtr"
+  temptab_q$joi3_state <- "join reac as r on r.primaryid = de.primaryid and r.qtr = de.qtr"
   temptab_q$whe1_state <- paste0("where lower(i.indi_pt) in (", in_qualifiers, ")")
   temptab_q$nex0_state <- paste0("and dr.role_cod in ", in_role_codes)
   # take the last case version only
@@ -816,18 +818,10 @@ get_indication_records <- function(indis, role_code = "PS", role_code_exclusive 
     "and not exists (select 1 from demo as de2 ",
     " where de2.qtr > de.qtr and de2.primaryid = de.primaryid)"
   )
-  # temptab_q$nex3_state <- paste0(
-  #   "and not exists (select 1 from drug as dr2 ",
-  #   " where dr2.qtr > dr.qtr and dr2.primaryid = dr.primaryid and dr2.drug_seq = dr.drug_seq)"
-  # )
-  # temptab_q$nex4_state <- paste0(
-  #   "and not exists (select 1 from indi as i2 ",
-  #   " where i2.qtr > i.qtr and i2.primaryid = i2.primaryid and i2.indi_drug_seq = i.indi_drug_seq)"
-  # )
   if (role_code_exclusive) {
     temptab_q$nex5_state <- paste0(
       "and not exists (select 1",
-      "from drug as dr0 ",
+      " from drug as dr0 ",
       " where dr0.primaryid = dr.primaryid",
       " and dr0.role_cod not in ", 
       in_role_codes,
@@ -842,6 +836,13 @@ get_indication_records <- function(indis, role_code = "PS", role_code_exclusive 
     cat("No records found for the specified indications\n\n")
     return(indi_df)
   }
+  
+  # multiple rows per reaction PT are expected, need to flatten these rows
+  indi_df <-
+    indi_df %>%
+    group_by(across(c(-pt))) %>% # group by everything except PT
+    summarise(pts = paste(pt, collapse = "!"), .groups = "keep") %>%
+    ungroup()
   
   non_unique <-
     indi_df %>%

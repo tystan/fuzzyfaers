@@ -49,6 +49,7 @@ pretty_print_qstr <- function(q){
   q <- gsub(" (and|AND) ",   "\n|    \\1 ",   q)
   q <- gsub(" (on|ON) ",    "\n|    \\1 ",    q)
   q <- gsub(" (or|OR) ",    "\n|    \\1 ",    q)
+  q <- gsub(" (join|JOIN) ",    "\n|    \\1 ",    q)
   q <- gsub(" (limit|LIMIT) ", "\n|    \\1 ",    q)
   q <- gsub(" (order by|ORDER BY) ", "\n|    \\1 ",    q)
   q <- gsub(" (group by|GROUP BY) ", "\n|    \\1 ",    q)
