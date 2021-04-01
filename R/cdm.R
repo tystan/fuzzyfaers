@@ -77,7 +77,14 @@ find_drug_synonyms <- function(con, search_str, form = "") {
 }
 
 
-find_branded_cdm <- function(con, search_str) {
+
+
+find_branded_cdm <- function(con, search_str, max_char = 8, first_word = TRUE) {
+  
+  
+  search_str <- tolower(search_str)
+  if (nchar(search_str) > max_char) search_str <- substr(search_str, 1, 8)
+  if (first_word) search_str <- gsub("^([A-Za-z0-9\\-]+) .*", "\\1", search_str)
   
   query_pg(
     con = con,
@@ -91,15 +98,18 @@ find_branded_cdm <- function(con, search_str) {
   )
   
 }
+# USAGE:
+# find_branded_cdm(cdm_con, "humira")
 
-find_branded_concept <- function(con, search_str, form = "") {
+
+find_branded_concept <- function(con, search_str, form = "", max_char = 8, first_word = TRUE) {
   
   search_str <- tolower(search_str)
-  sql_res <- find_branded_cdm(con = con, search_str)
+  sql_res <- find_branded_cdm(con = con, search_str, max_char = max_char, first_word = first_word)
   n_res <- nrow(sql_res)
   
   if (n_res < 1) {
-    cat("No 'Branded Drug Form' could be found associated with '", search_str, "'\n")
+    cat("No 'Branded Drug Form' could be found associated with '", search_str, "'\n", sep = "")
     return(-1)
   } else if (n_res > 1) {
     cat("#### More than one possible result returned - automatically selecting best match ####\n")
@@ -120,10 +130,13 @@ find_branded_concept <- function(con, search_str, form = "") {
   return(pull(sql_res, concept_id))
   
 }
+# USAGE:
+# find_branded_concept(cdm_con, "humira")
 
-find_branded_drug <- function(con, search_str, form = "") {
+
+branded_drug_to_clinical <- function(con, search_str, form = "", max_char = 8, first_word = TRUE) {
   
-  cid <- find_branded_concept(con = con, search_str, form)
+  cid <- find_branded_concept(con = con, search_str, form, max_char = max_char, first_word = first_word)
   
   if (cid < 0) {
     return(search_str)
@@ -160,5 +173,13 @@ find_branded_drug <- function(con, search_str, form = "") {
   return(paste(syn_list, collapse = "|"))
   
 }
+# USAGE:
+# branded_drug_to_clinical(cdm_con, "humira")
+# branded_drug_to_clinical(cdm_con, "metronidazole")
+# branded_drug_to_clinical(cdm_con, "prednisone")
+# branded_drug_to_clinical(cdm_con, "methotrexate")
+# branded_drug_to_clinical(cdm_con, "mabthera")
+# branded_drug_to_clinical(cdm_con, "tamoxifen")
+# branded_drug_to_clinical(cdm_con, "sofosbuvir")
 
 

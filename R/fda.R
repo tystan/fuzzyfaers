@@ -781,3 +781,90 @@ plot_fuzz_match <- function(capture_dat, fuzzy_match_thresh = 0.5, reg_exp_thres
 
 
 
+get_indication_records <- function(indis, role_code = "PS", role_code_exclusive = FALSE) {
+  
+  # turn strings into strings ready for SQL query
+  # also any "'"s need to be doubled for Postgres to resolve them as a single '
+  in_qualifiers <- 
+    paste0(
+      "'", 
+      paste(gsub("'", "''", tolower(indis)), collapse = "', '"), 
+      "'"
+    )
+  
+  in_role_codes <- 
+    paste0("('", paste(role_code, collapse = "', '"), "')")
+  
+  temptab_q <- list() 
+  
+  temptab_q$sele_state <- paste0(
+    "select i.indi_pt, dr.primaryid, dr.caseid, dr.drug_seq, dr.drugname, dr.role_cod, dr.prod_ai, ", 
+    "de.event_dt, de.fda_dt, de.rept_cod, de.age, de.age_cod, de.sex, de.occr_country"
+  )
+  temptab_q$from_state <- "from indi as i"
+  temptab_q$joi1_state <- "join drug as dr on dr.primaryid = i.primaryid and dr.drug_seq = i.indi_drug_seq and dr.qtr = i.qtr"
+  temptab_q$joi2_state <- "join demo as de on de.primaryid = dr.primaryid and de.qtr = dr.qtr"
+  temptab_q$whe1_state <- paste0("where lower(i.indi_pt) in (", in_qualifiers, ")")
+  temptab_q$nex0_state <- paste0("and dr.role_cod in ", in_role_codes)
+  # take the last case version only
+  temptab_q$nex1_state <- paste0(
+    "and not exists (select 1 from demo as de1 ",
+    " where de1.caseversion > de.caseversion and de1.caseid = de.caseid)"
+  )
+  # remove duplicates in different quarterly extracts
+  temptab_q$nex2_state <- paste0(
+    "and not exists (select 1 from demo as de2 ",
+    " where de2.qtr > de.qtr and de2.primaryid = de.primaryid)"
+  )
+  # temptab_q$nex3_state <- paste0(
+  #   "and not exists (select 1 from drug as dr2 ",
+  #   " where dr2.qtr > dr.qtr and dr2.primaryid = dr.primaryid and dr2.drug_seq = dr.drug_seq)"
+  # )
+  # temptab_q$nex4_state <- paste0(
+  #   "and not exists (select 1 from indi as i2 ",
+  #   " where i2.qtr > i.qtr and i2.primaryid = i2.primaryid and i2.indi_drug_seq = i.indi_drug_seq)"
+  # )
+  if (role_code_exclusive) {
+    temptab_q$nex5_state <- paste0(
+      "and not exists (select 1",
+      "from drug as dr0 ",
+      " where dr0.primaryid = dr.primaryid",
+      " and dr0.role_cod not in ", 
+      in_role_codes,
+      ")"
+    )
+  }
+  temptab_q$orde_state <- "order by dr.primaryid, dr.drug_seq;"
+  
+  indi_df <- query_pg(con = fda_con, paste(temptab_q, collapse = " "))
+  
+  if (nrow(indi_df) < 1) {
+    cat("No records found for the specified indications\n\n")
+    return(indi_df)
+  }
+  
+  non_unique <-
+    indi_df %>%
+    group_by(primaryid) %>%
+    summarise(n = n(), .groups = "keep") %>%
+    ungroup() %>%
+    dplyr::filter(n > 1)
+  
+  if (nrow(non_unique) > 0) {
+    cat("**NOTE**: there are multiple records for", nrow(non_unique), "primary ids.\n")
+    cat("          It may be because there are multiple indications supplied that match these primaryids.\n")
+    cat("          Here are some of the primaryids in question:\n")
+    cat("         ", paste(non_unique$primaryid[1:min(5, nrow(non_unique))], collapse = ", "), "\n")
+  }
+  
+  return(indi_df)
+  
+}
+
+
+
+
+
+
+
+
