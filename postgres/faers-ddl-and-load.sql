@@ -292,10 +292,22 @@ ALTER TABLE drug ADD CONSTRAINT xpk_drug PRIMARY KEY (primaryid,caseid,drug_seq,
 /* (see postgres/delete-dups.R to see how sql was generated)        */
 /* ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
-/* to see the counts of rows to be deleted */
-
-
 SET search_path TO faers_dat;
+
+/* to see the counts of rows to be deleted (before deleting) */
+
+/* 
+previous output (up to 2020 Q3 extract) looks like this:
+
+"Duplicate records in reac to be deleted:"	1477
+"Duplicate records in outc to be deleted:"	456
+"Duplicate records in drug to be deleted:"	6181
+"Duplicate records in rpsr to be deleted:"	120
+"Duplicate records in demo to be deleted:"	487
+"Duplicate records in indi to be deleted:"	4432
+"Duplicate records in ther to be deleted:"	3769
+*/
+
 
 select 'Duplicate records in ther to be deleted:' as dup_descrip, count(*) as dup_count
   from ther as t0
