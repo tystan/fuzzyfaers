@@ -287,14 +287,176 @@ ALTER TABLE drug ADD CONSTRAINT xpk_drug PRIMARY KEY (primaryid,caseid,drug_seq,
 
 
 
+/* ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
+/* delete duplicate records in tables                               */
+/* (see postgres/delete-dups.R to see how sql was generated)        */
+/* ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
+
+/* to see the counts of rows to be deleted */
 
 
+SET search_path TO faers_dat;
+
+select 'Duplicate records in ther to be deleted:' as dup_descrip, count(*) as dup_count
+  from ther as t0
+where exists (
+  select 1
+  from ther as t1
+  where t0.primaryid = t1.primaryid
+  and t0.qtr < t1.qtr
+)
+
+union
+
+select 'Duplicate records in indi to be deleted:' as dup_descrip, count(*) as dup_count
+  from indi as t0
+where exists (
+  select 1
+  from indi as t1
+  where t0.primaryid = t1.primaryid
+  and t0.qtr < t1.qtr
+)
+
+union
+
+select 'Duplicate records in drug to be deleted:' as dup_descrip, count(*) as dup_count
+  from drug as t0
+where exists (
+  select 1
+  from drug as t1
+  where t0.primaryid = t1.primaryid
+  and t0.qtr < t1.qtr
+)
+
+union
+
+select 'Duplicate records in demo to be deleted:' as dup_descrip, count(*) as dup_count
+  from demo as t0
+where exists (
+  select 1
+  from demo as t1
+  where t0.primaryid = t1.primaryid
+  and t0.qtr < t1.qtr
+)
+
+union
+
+select 'Duplicate records in reac to be deleted:' as dup_descrip, count(*) as dup_count
+  from reac as t0
+where exists (
+  select 1
+  from reac as t1
+  where t0.primaryid = t1.primaryid
+  and t0.qtr < t1.qtr
+)
+
+union
+
+select 'Duplicate records in outc to be deleted:' as dup_descrip, count(*) as dup_count
+  from outc as t0
+where exists (
+  select 1
+  from outc as t1
+  where t0.primaryid = t1.primaryid
+  and t0.qtr < t1.qtr
+)
+
+union
+
+select 'Duplicate records in rpsr to be deleted:' as dup_descrip, count(*) as dup_count
+  from rpsr as t0
+where exists (
+  select 1
+  from rpsr as t1
+  where t0.primaryid = t1.primaryid
+  and t0.qtr < t1.qtr
+)
+
+;
 
 
+/* !!! actual deletions !!! */
+
+/* 
+each query finds records that are superseded by the same primaryid (and unique identifiers) in a new quarter's data 
+*/
 
 
+DELETE FROM ther
+where exists (
+  select 1
+  from ther as t1
+  where ther.primaryid = t1.primaryid
+  and ther.qtr < t1.qtr
+)
+-- RETURNING * /* optional to print deleted rows */
+;
 
 
+DELETE FROM indi
+where exists (
+  select 1
+  from indi as t1
+  where indi.primaryid = t1.primaryid
+  and indi.qtr < t1.qtr
+)
+-- RETURNING * /* optional to print deleted rows */
+;
+
+
+DELETE FROM drug
+where exists (
+  select 1
+  from drug as t1
+  where drug.primaryid = t1.primaryid
+  and drug.qtr < t1.qtr
+)
+-- RETURNING * /* optional to print deleted rows */
+;
+
+
+DELETE FROM demo
+where exists (
+  select 1
+  from demo as t1
+  where demo.primaryid = t1.primaryid
+  and demo.qtr < t1.qtr
+)
+-- RETURNING * /* optional to print deleted rows */
+;
+
+
+DELETE FROM reac
+where exists (
+  select 1
+  from reac as t1
+  where reac.primaryid = t1.primaryid
+  and reac.qtr < t1.qtr
+)
+-- RETURNING * /* optional to print deleted rows */
+;
+
+
+DELETE FROM outc
+where exists (
+  select 1
+  from outc as t1
+  where outc.primaryid = t1.primaryid
+  and outc.qtr < t1.qtr
+)
+-- RETURNING * /* optional to print deleted rows */
+;
+
+
+DELETE FROM rpsr
+where exists (
+  select 1
+  from rpsr as t1
+  where rpsr.primaryid = t1.primaryid
+  and rpsr.qtr < t1.qtr
+)
+-- RETURNING * /* optional to print deleted rows */
+;
 
 
 
