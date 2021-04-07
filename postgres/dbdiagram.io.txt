@@ -1,0 +1,133 @@
+Table "indi" {
+  "primaryid" BIGINT [pk, not null] 
+  "caseid" BIGINT [not null]
+  "indi_drug_seq" BIGINT [pk, not null]
+  "indi_pt" VARCHAR(100) [not null]
+  "qtr" VARCHAR(6) [not null]
+
+Indexes {
+  primaryid [name: "idx_indi_primaryid"]
+  caseid [name: "idx_indi_caseid"]
+}
+}
+
+Table "outc" {
+  "primaryid" BIGINT [pk, not null]
+  "caseid" BIGINT [not null]
+  "outc_cod" VARCHAR(4) [not null]
+  "qtr" VARCHAR(6) [not null]
+
+Indexes {
+  primaryid [name: "idx_outc_primaryid"]
+  caseid [name: "idx_outc_caseid"]
+}
+}
+
+Table "reac" {
+  "primaryid" BIGINT [pk, not null]
+  "caseid" BIGINT [not null]
+  "pt" VARCHAR(100) [not null]
+  "qtr" VARCHAR(6) [not null]
+  "drug_rec_act" VARCHAR(90)
+
+Indexes {
+  primaryid [name: "idx_reac_primaryid"]
+  caseid [name: "idx_reac_caseid"]
+  pt [name: "idx_reac_pt"]
+}
+}
+
+Table "rpsr" {
+  "primaryid" BIGINT [pk, not null]
+  "caseid" BIGINT [not null]
+  "rpsr_cod" VARCHAR(6) [not null]
+  "qtr" VARCHAR(6) [not null]
+
+Indexes {
+  primaryid [name: "idx_rpsr_primaryid"]
+  caseid [name: "idx_rpsr_caseid"]
+}
+}
+
+Table "ther" {
+  "primaryid" BIGINT [pk, not null]
+  "caseid" BIGINT [not null]
+  "dsg_drug_seq" BIGINT [pk, not null]
+  "start_dt" VARCHAR(8)
+  "end_dt" VARCHAR(8)
+  "dur" VARCHAR(7)
+  "dur_cod" VARCHAR(10)
+  "qtr" VARCHAR(6) [not null]
+
+Indexes {
+  primaryid [name: "idx_ther_primaryid"]
+  caseid [name: "idx_ther_caseid"]
+}
+}
+
+Table "demo" {
+  "primaryid" BIGINT [pk, not null, ref: < drug.primaryid, ref: < reac.primaryid, ref: < outc.primaryid, ref: < rpsr.primaryid]
+  "caseid" BIGINT [not null]
+  "caseversion" BIGINT [not null]
+  "i_f_code" VARCHAR(1) [not null]
+  "event_dt" VARCHAR(8)
+  "mfr_dt" VARCHAR(8)
+  "init_fda_dt" VARCHAR(8) [not null]
+  "fda_dt" VARCHAR(8) [not null]
+  "rept_cod" VARCHAR(5)
+  "mfr_num" VARCHAR(90)
+  "mfr_sndr" VARCHAR(65)
+  "age" "NUMERIC(12, 2)"
+  "age_cod" VARCHAR(3)
+  "gndr_cod" VARCHAR(3)
+  "e_sub" VARCHAR(1) [not null]
+  "wt" VARCHAR(14)
+  "wt_cod" VARCHAR(5)
+  "rept_dt" VARCHAR(8)
+  "to_mfr" VARCHAR(1)
+  "occp_cod" VARCHAR(5)
+  "reporter_country" VARCHAR(21)
+  "occr_country" VARCHAR(2)
+  "qtr" VARCHAR(6) [not null]
+  "auth_num" VARCHAR(100)
+  "lit_ref" VARCHAR(500)
+  "age_grp" VARCHAR(1)
+  "sex" VARCHAR(3)
+
+Indexes {
+  primaryid [name: "idx_demo_primaryid"]
+  caseid [name: "idx_demo_caseid"]
+}
+}
+
+Table "drug" {
+  "primaryid" BIGINT [pk, not null, ref: - ther.primaryid, ref: - indi.primaryid]
+  "caseid" BIGINT [not null]
+  "drug_seq" BIGINT [pk, not null, ref: - ther.dsg_drug_seq, ref: - indi.indi_drug_seq]
+  "role_cod" VARCHAR(2)
+  "drugname" VARCHAR(500)
+  "val_vbm" BIGINT [not null]
+  "route" VARCHAR(37)
+  "dose_vbm" VARCHAR(288)
+  "cum_dose_chr" VARCHAR(15)
+  "cum_dose_unit" VARCHAR(8)
+  "dechal" VARCHAR(1)
+  "rechal" VARCHAR(2)
+  "lot_num" VARCHAR(363)
+  "exp_dt" VARCHAR(139)
+  "nda_num" VARCHAR(27)
+  "dose_amt" VARCHAR(15)
+  "dose_unit" VARCHAR(10)
+  "dose_form" VARCHAR(50)
+  "dose_freq" VARCHAR(11)
+  "qtr" VARCHAR(6) [not null]
+  "prod_ai" VARCHAR(300)
+
+Indexes {
+  primaryid [name: "idx_drug_primaryid"]
+  caseid [name: "idx_drug_caseid"]
+  drugname [name: "idx_drug_drugname"]
+  prod_ai [name: "idx_drug_prod_ai"]
+}
+}
+

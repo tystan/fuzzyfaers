@@ -1,6 +1,5 @@
 
 
-
 /* ++++++++++++++++++++++++++++++++++++++++++++ */
 /* NB:                                          */
 /* the below assumes the user is `postgres' and */
@@ -12,12 +11,14 @@
 -- create the schema you want to use
 CREATE SCHEMA faers_dat
     AUTHORIZATION postgres;
-	
+
+
+-- set the search path so you don't have to specify the schema "faers_dat" each time
+-- (although I have been explicit in some statements below)
+
 SHOW search_path;
 SET search_path TO faers_dat;
 SHOW search_path;
-
-
 
 
 /* ++++++++++++++++++++++++++++++++++++++++++++ */
@@ -26,7 +27,6 @@ SHOW search_path;
 
 
 -- note I may have made some columns bigger than they strictly need to be
-
 
 DROP TABLE IF EXISTS faers_dat.indi;
 CREATE TABLE faers_dat.indi (
@@ -141,9 +141,6 @@ CREATE TABLE faers_dat.drug (
 );
 
 
-
-
-
 /* +++++++++++++++++++++++++++++++++++++++++ */
 /* Import CSVs */
 /* +++++++++++++++++++++++++++++++++++++++++ */
@@ -241,50 +238,40 @@ select count(*) from faers_dat.drug; -- ~40 mil
 
 
 CREATE INDEX idx_indi_primaryid  ON indi (primaryid ASC);
-CLUSTER indi USING idx_indi_primaryid ;
-CREATE INDEX idx_indi_caseid  ON indi (caseid ASC);
-
-
-CREATE INDEX idx_outc_primaryid  ON outc (primaryid ASC);
-CLUSTER outc USING idx_outc_primaryid ;
-CREATE INDEX idx_outc_caseid  ON outc (caseid ASC);
-
-
-CREATE INDEX idx_reac_primaryid ON reac (primaryid ASC);
-CLUSTER reac USING idx_reac_primaryid ;
-CREATE INDEX idx_reac_caseid  ON reac (caseid ASC);
-
-CREATE INDEX idx_reac_pt  ON reac (pt ASC);
-
-CREATE INDEX idx_rpsr_primaryid  ON rpsr (primaryid ASC);
-CLUSTER rpsr USING idx_rpsr_primaryid ;
-CREATE INDEX idx_rpsr_caseid  ON rpsr (caseid ASC);
-
+CREATE INDEX idx_indi_drug_seq  ON indi (primaryid ASC, indi_drug_seq ASC);
+CLUSTER indi USING idx_indi_drug_seq ;
 
 CREATE INDEX idx_ther_primaryid  ON ther (primaryid ASC);
-CLUSTER ther USING idx_ther_primaryid ;
-CREATE INDEX idx_ther_caseid  ON ther (caseid ASC);
-
-
-CREATE INDEX idx_demo_primaryid  ON demo (primaryid ASC);
-CLUSTER demo USING idx_demo_primaryid ;
-CREATE INDEX idx_demo_caseid  ON demo (caseid ASC);
-
+CREATE INDEX idx_ther_drug_seq  ON ther (primaryid ASC, dsg_drug_seq ASC);
+CLUSTER ther USING idx_ther_drug_seq ;
 
 CREATE INDEX idx_drug_primaryid  ON drug (primaryid ASC);
-CLUSTER drug USING idx_drug_primaryid ;
-CREATE INDEX idx_drug_caseid  ON drug (caseid ASC);
-
+CREATE INDEX idx_drug_drug_seq  ON drug (primaryid ASC, drug_seq ASC);
+CREATE INDEX idx_drug_role_cod  ON drug (primaryid ASC, drug_seq ASC, role_cod);
 CREATE INDEX idx_drug_drugname  ON drug (drugname ASC);
 CREATE INDEX idx_drug_prod_ai  ON drug (prod_ai ASC);
+CLUSTER drug USING idx_drug_drug_seq ;
 
+CREATE INDEX idx_demo_primaryid  ON demo (primaryid ASC);
+CREATE INDEX idx_demo_caseid  ON demo (caseid ASC);
+CREATE INDEX idx_demo_event_dt  ON demo (event_dt ASC);
+CREATE INDEX idx_demo_fda_dt  ON demo (fda_dt ASC);
+CREATE INDEX idx_demo_occr_country  ON demo (occr_country ASC);
+CREATE INDEX idx_demo_age  ON demo (age ASC);
+CREATE INDEX idx_demo_sex  ON demo (sex ASC);
+CLUSTER demo USING idx_demo_primaryid ;
 
+CREATE INDEX idx_reac_primaryid ON reac (primaryid ASC);
+CREATE INDEX idx_reac_pt  ON reac (pt ASC);
+CLUSTER reac USING idx_reac_primaryid ;
 
-ALTER TABLE demo ADD CONSTRAINT xpk_demo PRIMARY KEY (primaryid,caseid,caseversion,qtr);
-ALTER TABLE drug ADD CONSTRAINT xpk_drug PRIMARY KEY (primaryid,caseid,drug_seq,qtr);
+CREATE INDEX idx_outc_primaryid  ON outc (primaryid ASC);
+CREATE INDEX idx_outc_outc_cod  ON outc (outc_cod ASC);
+CLUSTER outc USING idx_outc_primaryid ;
 
-
-
+CREATE INDEX idx_rpsr_primaryid  ON rpsr (primaryid ASC);
+CREATE INDEX idx_rpsr_rpsr_cod  ON rpsr (rpsr_cod ASC);
+CLUSTER rpsr USING idx_rpsr_primaryid ;
 
 
 /* ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
@@ -292,6 +279,7 @@ ALTER TABLE drug ADD CONSTRAINT xpk_drug PRIMARY KEY (primaryid,caseid,drug_seq,
 /* (see postgres/delete-dups.R to see how sql was generated)        */
 /* ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
+-- do it again because why not
 SET search_path TO faers_dat;
 
 /* to see the counts of rows to be deleted (before deleting) */
@@ -472,5 +460,97 @@ where exists (
 
 
 
+
+
+/* -------- old case IDs to delete ------- */
+
+
+/* 
+these are the primaryids corresponding to the old caseversions 
+that will be used to delete from all 7 tables
+*/
+drop table if exists tmp_old_case_pids;
+create temp table tmp_old_case_pids as
+select distinct d1.primaryid, d1.caseversion, d1.caseid
+  from demo as d1
+where exists (
+  select 1
+  from demo as d0
+  where d1.caseid = d0.caseid
+  and d1.caseversion < d0.caseversion
+)
+order by d1.caseid, d1.caseversion
+;
+
+/*
+delete these primaryids from each table
+*/
+DELETE FROM demo
+where primaryid in (select t.primaryid from tmp_old_case_pids as t)
+-- RETURNING * 
+;
+
+DELETE FROM indi
+where primaryid in (select t.primaryid from tmp_old_case_pids as t)
+-- RETURNING * 
+;
+
+DELETE FROM ther
+where primaryid in (select t.primaryid from tmp_old_case_pids as t)
+-- RETURNING * 
+;
+
+DELETE FROM drug
+where primaryid in (select t.primaryid from tmp_old_case_pids as t)
+-- RETURNING * 
+;
+
+DELETE FROM reac
+where primaryid in (select t.primaryid from tmp_old_case_pids as t)
+-- RETURNING * 
+;
+
+DELETE FROM outc
+where primaryid in (select t.primaryid from tmp_old_case_pids as t)
+-- RETURNING * 
+;
+
+DELETE FROM rpsr
+where primaryid in (select t.primaryid from tmp_old_case_pids as t)
+-- RETURNING * 
+;
+
+/*
+remove tmp table
+*/
+drop table if exists tmp_old_case_pids;
+
+
+/* ++++++++++++++++++++++++++++++++++++++++++++ */
+/* Create constraints/primary keys/foreign keys */
+/* ++++++++++++++++++++++++++++++++++++++++++++ */
+
+/*
+primary keys 
+*/
+
+ALTER TABLE drug ADD CONSTRAINT xpk_drug PRIMARY KEY (primaryid, drug_seq);
+ALTER TABLE demo ADD CONSTRAINT xpk_demo PRIMARY KEY (primaryid);
+
+/*
+foreign keys 
+*/
+
+-- FKs to drug table
+ALTER TABLE indi ADD CONSTRAINT xfk_indi FOREIGN KEY (primaryid, indi_drug_seq) REFERENCES drug (primaryid, drug_seq);
+ALTER TABLE ther ADD CONSTRAINT xfk_ther FOREIGN KEY (primaryid, dsg_drug_seq) REFERENCES drug (primaryid, drug_seq);
+
+-- FKs to demo table
+ALTER TABLE reac ADD CONSTRAINT xfk_reac FOREIGN KEY (primaryid) REFERENCES demo (primaryid);
+ALTER TABLE outc ADD CONSTRAINT xfk_outc FOREIGN KEY (primaryid) REFERENCES demo (primaryid);
+ALTER TABLE rpsr ADD CONSTRAINT xfk_rpsr FOREIGN KEY (primaryid) REFERENCES demo (primaryid);
+
+-- FKs from drug to demo table
+ALTER TABLE drug ADD CONSTRAINT xfk_drug FOREIGN KEY (primaryid) REFERENCES demo (primaryid);
 
 
