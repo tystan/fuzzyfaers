@@ -510,11 +510,12 @@ auto_get_dat <- function(cdm_con, cdm_schema, fda_con, fda_schema, drug, form = 
 
 
 
-get_drug_outc_2x2 <- function(con, drug, outc, drug_role = c("PS", "SS"), by_year = FALSE) {
+get_drug_outc_2x2 <- function(con, drug, outc, drug_role = c("PS", "SS"), indi_rm = NULL, by_year = FALSE) {
   
   
   drug_concat <- paste0("[", paste(drug, collapse = "|"), "]")
   outc_concat <- paste0("[", paste(outc, collapse = "|"), "]")
+  indi_concat <- paste0("[", paste(indi_rm, collapse = "|"), "]")
   
   q5_list <- list()
   q5_list$crea_state <- "CREATE TEMP TABLE temp_5  AS"
@@ -542,7 +543,6 @@ get_drug_outc_2x2 <- function(con, drug, outc, drug_role = c("PS", "SS"), by_yea
   
   
   q7_list <- list()
-  q7_list
   q7_list$crea_state <- "CREATE TEMP TABLE temp_7  AS"
   q7_list$sele_state <- "select distinct t6.primaryid, t5.drug_search "
   q7_list$from_state <- "from temp_6 as t6"
@@ -577,6 +577,72 @@ get_drug_outc_2x2 <- function(con, drug, outc, drug_role = c("PS", "SS"), by_yea
   execute_pg(con,  paste(q9_list, collapse = "       "))
   execute_pg(con,  paste0("UPDATE temp_9 SET pt = '", outc_concat, "' WHERE pt is not null;"))
   execute_pg(con,  paste0("UPDATE temp_9 SET pt = 'not ", outc_concat, "' WHERE pt is null;"))
+  
+  if (!is.null(indi_rm)) {
+    
+    q8b_list <- list()
+    q8b_list$crea_state <- "CREATE TEMP TABLE temp_8b  AS "
+    q8b_list$sele_state <- "select distinct primaryid, lower(indi_pt) as indi_pt"
+    q8b_list$from_state <- "from indi"
+    q8b_list$wher_state <- 
+      paste0(
+        "where lower(indi_pt) in ('", 
+        paste(indi_rm, collapse = "','"), 
+        "')"
+      )
+    execute_pg(con, "DROP table IF EXISTS temp_8b;  ")
+    execute_pg(con, paste(q8b_list, collapse = "       "))
+    execute_pg(con,  paste0("UPDATE temp_8b SET indi_pt = '", indi_concat, "' WHERE indi_pt is not null;"))
+    
+    # get rid of cases where more than one indi_pt per primaryid
+    execute_pg(con, "DROP table IF EXISTS temp_8c;  ")
+    execute_pg(con, "CREATE TEMP TABLE temp_8c AS select distinct primaryid, indi_pt from temp_8b")
+    
+
+    q9b_list <- list()
+    q9b_list$crea_state <- "CREATE TEMP TABLE temp_9b  AS"
+    q9b_list$sele_state <- "select distinct t9.*, t8c.indi_pt "
+    q9b_list$from_state <- "from temp_9 as t9"
+    q9b_list$join_state <- "left join temp_8c as t8c on t9.primaryid = t8c.primaryid"
+    execute_pg(con, "DROP table IF EXISTS temp_9b;  ")
+    execute_pg(con,  paste(q9b_list, collapse = "       "))
+    
+    n_rm <- 
+      query_pg(con,  "select count(distinct primaryid) as n_rm from temp_9b where indi_pt is not null;") %>% 
+      pull(n_rm)
+    cat("\n\n#### There are", n_rm, "primaryid(s) with an indication of", indi_concat, "(to be removed) ####\n\n\n")
+    
+    # update non-`indi_rm` terms to say so
+    execute_pg(con,  paste0("UPDATE temp_9b SET indi_pt = 'not ", indi_concat, "' WHERE indi_pt is null;"))
+    
+    indi_rm_tab <- 
+      query_pg(
+        con,  
+        paste(
+          "select indi_pt, drug_search, pt, count(distinct primaryid) as count",
+          "from temp_9b group by indi_pt, drug_search, pt;"
+        )
+      )
+    
+    if (nrow(indi_rm_tab) > 0) {
+      cat("\n\n#### Prior to removing the indi_rm terms, this is the distribution of counts: ####\n")
+      print(xtabs(count ~ drug_search + pt + indi_pt , data = indi_rm_tab))
+      cat("\n########################\n\n")
+    }
+    
+    
+    # re-instate temp tab 9 with updated version
+    execute_pg(
+      con,  
+      paste0(
+        "DROP table IF EXISTS temp_9;   ",
+        "CREATE TEMP TABLE temp_9 AS   ",
+        "select * from temp_9b where indi_pt = 'not ", indi_concat, "';"
+      )
+    )
+    
+    
+  }
   
   
   res_tab <- NULL # initialise
