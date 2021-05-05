@@ -38,6 +38,54 @@ concat_analysis_dat <- function(...) {
 }
 
 
+
+
+indication_exclude_primaryids <- function(dat, indi_exclusions = NULL) {
+  
+  if (is_na_or_null(indi_exclusions)) {
+    return(dat)
+  } else {
+    indi_exclusions <- tolower(indi_exclusions)
+  }
+  
+  dat$indis <- tolower(dat$indis)
+  
+  pids_prior <- 
+    dat %>% 
+    select(drug_search, primaryid) %>% 
+    group_by(drug_search, primaryid) %>% 
+    summarise(n = n(), .groups = "keep") %>% 
+    nrow(.)
+  
+  exclude_pids <-
+    dat %>%
+    select(primaryid, drug_search, indis) %>%
+    dplyr::filter(indis %in% indi_exclusions) %>%
+    distinct(primaryid, drug_search, indis) 
+  
+  dat <- anti_join(dat, exclude_pids, "primaryid")
+  
+  pids_post <- 
+    dat %>% 
+    select(drug_search, primaryid) %>% 
+    group_by(drug_search, primaryid) %>% 
+    summarise(n = n(), .groups = "keep") %>% 
+    nrow(.)
+  
+  cat(
+    "From removing primaryids with indication preferred terms to be excluded, the number of primaryids is now",
+    pids_post, "after removing", pids_prior - pids_post, "\n"
+  )
+  
+  cat("\nA summary of the primaryid counts being removed are printed below:\n")
+  
+  print(knitr::kable(with(exclude_pids, table(drug_search, indis))))
+  
+  return(dat)
+  
+}
+
+
 create_row_per_caseid <- function(dat, outc_of_interest, role_filter = c("PS", "SS", "C", "I"), outc_exclusions = NULL) {
   
   outc_of_interest <- tolower(outc_of_interest)  
@@ -46,11 +94,7 @@ create_row_per_caseid <- function(dat, outc_of_interest, role_filter = c("PS", "
   if (!is_na_or_null(outc_exclusions)) {
     outc_exclusions <- tolower(outc_exclusions)
   }
-  if (!is_na_or_null(role_filter)) {
-    dat <-
-      dat %>%
-      dplyr::filter(role_cod %in% role_filter)
-  }
+  
   dat$pt <- tolower(dat$pt)
   
   # remove rows without fuzzy match on drug
@@ -58,8 +102,17 @@ create_row_per_caseid <- function(dat, outc_of_interest, role_filter = c("PS", "
     dat %>%
     dplyr::filter(!is.na(drug_catch))
   
+  # this has to be done after removing indications, as there may be indications for secondary drugs etc that
+  # we want to exclude those records....
+  if (!is_na_or_null(role_filter)) {
+    dat <-
+      dat %>%
+      dplyr::filter(role_cod %in% role_filter)
+  }
+  
+  
   if (!is_na_or_null(outc_exclusions)) {
-    outc_exclusions <- tolower(outc_exclusions)
+
     outc_exclusions <- outc_exclusions[!(outc_exclusions %in% outc_of_interest)] # don't exclude outcome of interest!
     cat("Now excluding primaryids where the following preferred terms are included the record reaction:\n-----------\n")
     if (length(outc_exclusions) > 3) {
@@ -68,13 +121,15 @@ create_row_per_caseid <- function(dat, outc_of_interest, role_filter = c("PS", "
       cat(paste(outc_exclusions, collapse = "\\n"), "\n-----------\n")
     }
     
-    pids_prior <- dat %>% group_by(drug_search, primaryid) %>% summarise(n = n()) %>% nrow(.)
+    pids_prior <- dat %>% group_by(drug_search, primaryid) %>% summarise(n = n(), .groups = "keep") %>% nrow(.)
     exclude_pids <-
       dat %>%
+      select(primaryid, pt) %>%
       dplyr::filter(pt %in% outc_exclusions) %>%
       distinct(primaryid, pt)    
     keep_pids <-
       dat %>%
+      select(primaryid, pt) %>%
       dplyr::filter(pt %in% outc_of_interest) %>%
       distinct(primaryid)
     exclude_pids <-      
@@ -89,9 +144,9 @@ create_row_per_caseid <- function(dat, outc_of_interest, role_filter = c("PS", "
         exclude_pids,
         "primaryid"
       )
-    pids_post <- dat %>% group_by(drug_search, primaryid) %>% summarise(n = n()) %>% nrow(.)
+    pids_post <- dat %>% group_by(drug_search, primaryid) %>% summarise(n = n(), .groups = "keep") %>% nrow(.)
     cat(
-      "From removing primaryids with preferred terms to be excluded, the number of primaryids is now",
+      "From removing primaryids with outcome/reaction preferred terms to be excluded, the number of primaryids is now",
       pids_post, "after removing", pids_prior - pids_post, "\n"
     )
     
@@ -140,61 +195,11 @@ create_row_per_caseid <- function(dat, outc_of_interest, role_filter = c("PS", "
   cat("### Summary of data (cross-tab of drug vs outcome) before caseids with both drugs are removed.\n")
   dat %>% 
     group_by(drug_search, pt) %>% 
-    summarise(n = n()) %>%
+    summarise(n = n(), .groups = "keep") %>%
     kable(.) %>%
     print(.)
   
-  ###### OLD
-  # dat <-
-  #   dat %>%
-  #   group_by(drug_search, caseid) %>%
-  #   summarise(outc = sum(outc)) %>%
-  #   ungroup() %>%
-  #   mutate(outc = ifelse(outc > 0, outc_of_interest, paste0("_not ", outc_of_interest)))
-  # 
-  # cat("### Summary of data (cross-tab of drug vs outcome) before caseids with both drugs are removed.\n")
-  # dat %>% 
-  #   group_by(drug_search, outc) %>% 
-  #   summarise(n = n()) %>%
-  #   kable(.) %>%
-  #   print(.)
-  
-  # dups <-
-  #   dat %>% group_by(caseid, outc) %>% summarise(cnt = n()) %>% dplyr::filter(cnt > 1)
-  # 
-  # n_dup <- nrow(dups)
-  # if (n_dup > 0) {
-  #   dup_tab <- table(dups$outc)
-  #   cat(
-  #     "NOTE:\n",
-  #     "* there are ", dup_tab[1], " caseids where both drugs are used and the outcome '", names(dup_tab)[1], "' occurs, and\n",
-  #     "* there are ", dup_tab[2], " caseids where both drugs are used and the outcome '", names(dup_tab)[2], "' occurs.\n",
-  #     "ALL ", sum(dup_tab), " of these records are being removed from the analysis data.\n",
-  #     sep = ""
-  #   )
-  #   
-  #   n_dat <- nrow(dat)
-  #   dat <-
-  #     dat %>%
-  #     anti_join(., dups, "caseid")
-  #   
-  #   if ((n_dat - 2 * sum(dup_tab)) != nrow(dat)) {
-  #     cat("There were", n_dat, "rows,", sum(dup_tab), "duplicates, leaving a remaining", nrow(dat), "rows\n")
-  #     stop("Error in removing duplicate rows")
-  #   }
-  #   
-  #   cat("### Summary of data (cross-tab of drug vs outcome) AFTER caseids with both drugs are removed.\n")
-  #   dat %>% 
-  #     group_by(drug_search, outc) %>% 
-  #     summarise(n = n()) %>%
-  #     kable(.) %>%
-  #     print(.)
-  #   
-  # } else {
-  #   
-  #   cat("### Good news, no caseids with both drugs were found, the above data summary reflects data being returned.\n")
-  # 
-  # }
+
   
   return(dat)
   
@@ -300,7 +305,7 @@ create_row_per_caseid_kp_excl <- function(dat, outc_of_interest, role_filter = c
   cat("### Summary of data (cross-tab of drug vs outcome) before caseids with both drugs are removed.\n")
   dat %>% 
     group_by(drug_search, pt) %>% 
-    summarise(n = n()) %>%
+    summarise(n = n(), .groups = "keep") %>%
     kable(.) %>%
     print(.)
   

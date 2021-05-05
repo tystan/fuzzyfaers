@@ -630,6 +630,8 @@ get_drug_outc_2x2 <- function(con, drug, outc, drug_role = c("PS", "SS"), indi_r
       cat("\n########################\n\n")
     }
     
+    ### testing
+    # assign("test_temp_tab_9b", query_pg(con, "select * from temp_9b;"), envir = .GlobalEnv)
     
     # re-instate temp tab 9 with updated version
     execute_pg(
@@ -847,7 +849,7 @@ plot_fuzz_match <- function(capture_dat, fuzzy_match_thresh = 0.5, reg_exp_thres
 
 
 
-get_indication_records <- function(indis, role_code = "PS", role_code_exclusive = FALSE) {
+get_indication_records <- function(indis, role_code = c("PS", "SS", "C", "I"), role_code_exclusive = FALSE) {
   
   # turn strings into strings ready for SQL query
   # also any "'"s need to be doubled for Postgres to resolve them as a single '
