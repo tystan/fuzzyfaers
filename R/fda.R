@@ -652,15 +652,16 @@ get_drug_outc_2x2 <- function(con, drug, outc, drug_role = c("PS", "SS"), indi_r
     
     q10_list <- list()
     q10_list$crea_state <- "CREATE TEMP TABLE temp_10  AS"
-    q10_list$sele_state <- "select t9.*, de.event_dt"
+    q10_list$sele_state <- "select t9.*, de.event_dt, de.qtr"
     q10_list$from_state <- "from temp_9 as t9"
     q10_list$join_state <- "left join faers_dat.demo as de on t9.primaryid = de.primaryid"
     execute_pg(con, "DROP table IF EXISTS temp_10;  ")
     execute_pg(con,  paste(q10_list, collapse = "       "))
     execute_pg(con,  paste0("UPDATE temp_10 SET event_dt = substring(event_dt, 1, 4) WHERE event_dt is not null;"))
-    execute_pg(con,  paste0("UPDATE temp_10 SET event_dt = '9999' WHERE event_dt is null;"))
-    execute_pg(con,  paste0("UPDATE temp_10 SET event_dt = '9999' WHERE event_dt < '2013' or event_dt > '", format(Sys.time(), '%Y'), "';"))
-    
+    execute_pg(con,  paste0("UPDATE temp_10 SET event_dt = substring(qtr, 1, 4) WHERE event_dt is null;"))
+    # execute_pg(con,  paste0("UPDATE temp_10 SET event_dt = '9999' WHERE event_dt < '2013' or event_dt > '", format(Sys.time(), '%Y'), "';"))
+    execute_pg(con,  paste0("UPDATE temp_10 SET event_dt = '9999' WHERE event_dt > '", format(Sys.time(), '%Y'), "';"))
+    execute_pg(con,  paste0("UPDATE temp_10 SET event_dt = '0000' WHERE event_dt < '2013';"))
     
     res_tab <- 
       query_pg(
@@ -673,12 +674,19 @@ get_drug_outc_2x2 <- function(con, drug, outc, drug_role = c("PS", "SS"), indi_r
   } else {
   
   
-    res_tab <- 
+    res_tab <-
       query_pg(
-        con,  
+        con,
         "select drug_search, pt, count(distinct primaryid) as count from temp_9 group by drug_search, pt;"
       )
     res_tab <- xtabs(count ~ drug_search + pt, data = res_tab)
+
+    # res_tab <- 
+    #   query_pg(
+    #     con,  
+    #     "select drug_search, pt, primaryid from temp_9 order by primaryid;"
+    #   )
+    
     
   }
   
