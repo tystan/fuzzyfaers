@@ -534,6 +534,11 @@ drop table if exists tmp_old_case_pids;
 primary keys 
 */
 
+-- remove overly specific constraints now duplicates are removed
+ALTER TABLE drug DROP CONSTRAINT xpk_drug;
+ALTER TABLE demo DROP CONSTRAINT xpk_demo;
+
+-- add more sensible constraints that are now unique without duplicates
 ALTER TABLE drug ADD CONSTRAINT xpk_drug PRIMARY KEY (primaryid, drug_seq);
 ALTER TABLE demo ADD CONSTRAINT xpk_demo PRIMARY KEY (primaryid);
 
