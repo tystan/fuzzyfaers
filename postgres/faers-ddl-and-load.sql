@@ -167,6 +167,10 @@ select * from faers_dat.ther limit 100;
 COPY faers_dat.demo FROM 'C:/Users/Public/faers/csv/demo.csv' WITH DELIMITER ',' CSV HEADER QUOTE '"' ;
 select * from faers_dat.demo limit 100;
 
+
+
+select count(distinct primaryid) from faers_dat.demo -- 12739526 (for data to 31 dec 2021, will reduce after below)
+
 /* +++++++++++++++++++++++++++++++++++++++++ */
 /* 
 NOTE: you may get an error with the below COPY statement on Windows
@@ -538,6 +542,133 @@ primary keys
 ALTER TABLE drug DROP CONSTRAINT xpk_drug;
 ALTER TABLE demo DROP CONSTRAINT xpk_demo;
 
+
+/* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
+/* There are some duplicate druq_seqs in 2021Q4 data to remove */
+/* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
+
+
+-- these are problem children
+drop table if exists dbl_drg_seq;
+create temp table dbl_drg_seq as
+select primaryid, drug_seq, count(*) as nrow from drug 
+group by primaryid, drug_seq
+having count(*) > 1
+order by primaryid, drug_seq;
+
+select * from dbl_drg_seq;
+
+
+drop table if exists dbl_drg_seq2;
+create temp table dbl_drg_seq2 as
+select row_number() over (partition by db.primaryid, db.drug_seq) as rn, dr.*
+from drug as dr
+join dbl_drg_seq as db
+on dr.primaryid = db.primaryid
+and dr.drug_seq = db.drug_seq
+;
+
+
+select count(*) from dbl_drg_seq2;
+select count(*) from dbl_drg_seq2 where rn = 1;
+select count(*) from dbl_drg_seq2 where rn > 1;
+
+-- testing delete statement
+select db.rn, dr.*
+from drug as dr
+join dbl_drg_seq2 as db
+on dr.primaryid = db.primaryid 
+and dr.caseid = db.caseid 
+and dr.drug_seq = db.drug_seq 
+and (dr.role_cod = db.role_cod or (dr.role_cod is null and db.role_cod is null))
+and (dr.drugname = db.drugname or (dr.drugname is null and db.drugname is null))
+and (dr.val_vbm = db.val_vbm or (dr.val_vbm is null and db.val_vbm is null))
+and (dr.route = db.route or (dr.route is null and db.route is null))
+and (dr.dose_vbm = db.dose_vbm or (dr.dose_vbm is null and db.dose_vbm is null))
+and (dr.cum_dose_chr = db.cum_dose_chr or (dr.cum_dose_chr is null and db.cum_dose_chr is null))
+and (dr.cum_dose_unit = db.cum_dose_unit or (dr.cum_dose_unit is null and db.cum_dose_unit is null))
+and (dr.dechal = db.dechal or (dr.dechal is null and db.dechal is null))
+and (dr.rechal = db.rechal or (dr.rechal is null and db.rechal is null))
+and (dr.lot_num = db.lot_num or (dr.lot_num is null and db.lot_num is null))
+and (dr.exp_dt = db.exp_dt or (dr.exp_dt is null and db.exp_dt is null))
+and (dr.nda_num = db.nda_num or (dr.nda_num is null and db.nda_num is null))
+and (dr.dose_amt = db.dose_amt or (dr.dose_amt is null and db.dose_amt is null))
+and (dr.dose_unit = db.dose_unit or (dr.dose_unit is null and db.dose_unit is null))
+and (dr.dose_form = db.dose_form or (dr.dose_form is null and db.dose_form is null))
+and (dr.dose_freq = db.dose_freq or (dr.dose_freq is null and db.dose_freq is null))
+and (dr.qtr = db.qtr or (dr.qtr is null and db.qtr is null))
+and (dr.prod_ai = db.prod_ai or (dr.prod_ai is null and db.prod_ai is null))
+and db.rn > 1
+;
+
+-- testing delete that uses `exists` statement
+select *
+from drug 
+where exists (
+  select 1
+  from dbl_drg_seq2 as db
+  where drug.primaryid = db.primaryid 
+  and drug.caseid = db.caseid 
+  and drug.drug_seq = db.drug_seq 
+  and (drug.role_cod = db.role_cod or (drug.role_cod is null and db.role_cod is null))
+  and (drug.drugname = db.drugname or (drug.drugname is null and db.drugname is null))
+  and (drug.val_vbm = db.val_vbm or (drug.val_vbm is null and db.val_vbm is null))
+  and (drug.route = db.route or (drug.route is null and db.route is null))
+  and (drug.dose_vbm = db.dose_vbm or (drug.dose_vbm is null and db.dose_vbm is null))
+  and (drug.cum_dose_chr = db.cum_dose_chr or (drug.cum_dose_chr is null and db.cum_dose_chr is null))
+  and (drug.cum_dose_unit = db.cum_dose_unit or (drug.cum_dose_unit is null and db.cum_dose_unit is null))
+  and (drug.dechal = db.dechal or (drug.dechal is null and db.dechal is null))
+  and (drug.rechal = db.rechal or (drug.rechal is null and db.rechal is null))
+  and (drug.lot_num = db.lot_num or (drug.lot_num is null and db.lot_num is null))
+  and (drug.exp_dt = db.exp_dt or (drug.exp_dt is null and db.exp_dt is null))
+  and (drug.nda_num = db.nda_num or (drug.nda_num is null and db.nda_num is null))
+  and (drug.dose_amt = db.dose_amt or (drug.dose_amt is null and db.dose_amt is null))
+  and (drug.dose_unit = db.dose_unit or (drug.dose_unit is null and db.dose_unit is null))
+  and (drug.dose_form = db.dose_form or (drug.dose_form is null and db.dose_form is null))
+  and (drug.dose_freq = db.dose_freq or (drug.dose_freq is null and db.dose_freq is null))
+  and (drug.qtr = db.qtr or (drug.qtr is null and db.qtr is null))
+  and (drug.prod_ai = db.prod_ai or (drug.prod_ai is null and db.prod_ai is null))
+  and db.rn > 1
+)
+;
+
+-- ACTUAL DELETE STATEMENT
+DELETE FROM drug
+where exists (
+  select 1
+  from dbl_drg_seq2 as db
+  where drug.primaryid = db.primaryid 
+  and drug.caseid = db.caseid 
+  and drug.drug_seq = db.drug_seq 
+  and (drug.role_cod = db.role_cod or (drug.role_cod is null and db.role_cod is null))
+  and (drug.drugname = db.drugname or (drug.drugname is null and db.drugname is null))
+  and (drug.val_vbm = db.val_vbm or (drug.val_vbm is null and db.val_vbm is null))
+  and (drug.route = db.route or (drug.route is null and db.route is null))
+  and (drug.dose_vbm = db.dose_vbm or (drug.dose_vbm is null and db.dose_vbm is null))
+  and (drug.cum_dose_chr = db.cum_dose_chr or (drug.cum_dose_chr is null and db.cum_dose_chr is null))
+  and (drug.cum_dose_unit = db.cum_dose_unit or (drug.cum_dose_unit is null and db.cum_dose_unit is null))
+  and (drug.dechal = db.dechal or (drug.dechal is null and db.dechal is null))
+  and (drug.rechal = db.rechal or (drug.rechal is null and db.rechal is null))
+  and (drug.lot_num = db.lot_num or (drug.lot_num is null and db.lot_num is null))
+  and (drug.exp_dt = db.exp_dt or (drug.exp_dt is null and db.exp_dt is null))
+  and (drug.nda_num = db.nda_num or (drug.nda_num is null and db.nda_num is null))
+  and (drug.dose_amt = db.dose_amt or (drug.dose_amt is null and db.dose_amt is null))
+  and (drug.dose_unit = db.dose_unit or (drug.dose_unit is null and db.dose_unit is null))
+  and (drug.dose_form = db.dose_form or (drug.dose_form is null and db.dose_form is null))
+  and (drug.dose_freq = db.dose_freq or (drug.dose_freq is null and db.dose_freq is null))
+  and (drug.qtr = db.qtr or (drug.qtr is null and db.qtr is null))
+  and (drug.prod_ai = db.prod_ai or (drug.prod_ai is null and db.prod_ai is null))
+  and db.rn > 1
+	
+)
+-- RETURNING * /* optional to print deleted rows */
+;
+
+
+
+
+
+
 -- add more sensible constraints that are now unique without duplicates
 ALTER TABLE drug ADD CONSTRAINT xpk_drug PRIMARY KEY (primaryid, drug_seq);
 ALTER TABLE demo ADD CONSTRAINT xpk_demo PRIMARY KEY (primaryid);
@@ -547,6 +678,13 @@ foreign keys
 */
 
 -- FKs to drug table
+
+-- need to delete this anomoly
+DELETE FROM indi
+where primaryid = 202190331
+and indi_drug_seq = 1
+;
+
 ALTER TABLE indi ADD CONSTRAINT xfk_indi FOREIGN KEY (primaryid, indi_drug_seq) REFERENCES drug (primaryid, drug_seq);
 ALTER TABLE ther ADD CONSTRAINT xfk_ther FOREIGN KEY (primaryid, dsg_drug_seq) REFERENCES drug (primaryid, drug_seq);
 
@@ -559,3 +697,6 @@ ALTER TABLE rpsr ADD CONSTRAINT xfk_rpsr FOREIGN KEY (primaryid) REFERENCES demo
 ALTER TABLE drug ADD CONSTRAINT xfk_drug FOREIGN KEY (primaryid) REFERENCES demo (primaryid);
 
 
+
+
+select count(distinct primaryid) from faers_dat.demo -- 11,240,415 (-1,499,111 from before) 
